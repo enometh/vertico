@@ -727,9 +727,18 @@ When the prefix argument is 0, the group order is reset."
   (add-hook 'pre-command-hook #'vertico--prepare nil 'local)
   (add-hook 'post-command-hook #'vertico--exhibit nil 'local))
 
+(defvar vertico-completion-finished nil
+  "Hook function to remember selected candidate.")
+
 (defun vertico--advice (&rest args)
   "Advice for completion function, receiving ARGS."
-  (minibuffer-with-setup-hook #'vertico--setup (apply args)))
+  (minibuffer-with-setup-hook #'vertico--setup
+    (let ((ret (apply args)))
+      (when vertico-completion-finished
+	(funcall vertico-completion-finished ret))
+      ret)))
+
+;; (ad-unadvice 'vertico--advice)
 
 ;;;###autoload
 (define-minor-mode vertico-mode
