@@ -642,9 +642,16 @@ The function is configured by BY, BSIZE, BINDEX, BPRED and PRED."
   (add-hook 'pre-command-hook #'vertico--prepare nil 'local)
   (add-hook 'post-command-hook #'vertico--exhibit nil 'local))
 
+(defvar vertico-completion-finished nil
+  "Hook function to remember selected candidate.")
+
 (cl-defgeneric vertico--advice (&rest app)
   "Advice for completion function, apply APP."
-  (minibuffer-with-setup-hook #'vertico--setup (apply app)))
+  (minibuffer-with-setup-hook #'vertico--setup
+    (let ((ret (apply app)))
+      (when vertico-completion-finished
+	(funcall vertico-completion-finished ret))
+      ret)))
 
 (defun vertico-first ()
   "Go to first candidate, or to the prompt when the first candidate is selected."
