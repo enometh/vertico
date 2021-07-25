@@ -408,12 +408,17 @@ The function is configured by BY, BSIZE, BINDEX, BPRED and PRED."
   "Return t if PATH is a remote path."
   (string-match-p "\\`/[^/|:]+:" (substitute-in-file-name path)))
 
+(defvar vertico-force-exhibit nil)
+
 (defun vertico--update (&optional interruptible)
   "Update state, optionally INTERRUPTIBLE."
   (let* ((pt (max 0 (- (point) (minibuffer-prompt-end))))
          (content (minibuffer-contents-no-properties))
          (input (cons content pt)))
-    (unless (or (and interruptible (input-pending-p)) (equal vertico--input input))
+    (unless (and (if vertico-force-exhibit
+		     (setq vertico-force-exhibit nil)
+		   t)
+	    (or (and interruptible (input-pending-p)) (equal vertico--input input)))
       ;; Redisplay to make input immediately visible before expensive candidate
       ;; recomputation (gh:minad/vertico#89).  No redisplay during init because
       ;; of flicker.
@@ -688,6 +693,19 @@ The function is configured by BY, BSIZE, BINDEX, BPRED and PRED."
   "Go backward N candidates."
   (interactive "p")
   (vertico-next (- (or n 1))))
+
+(defun vertico-kill-buffer (&optional arg)
+  (interactive "P")
+  (let (cand buf)
+    (cond ((and (eolp)
+		(setq cand (and (>= vertico--index 0) (vertico--candidate)))
+		(setq buf (get-buffer cand)))
+	   (kill-buffer buf)
+	   (setq vertico-force-exhibit t)
+	   (vertico-next))
+	  (t (kill-line arg)))))
+
+(define-key vertico-map (kbd "C-k") 'vertico-kill-buffer)
 
 (defun vertico-exit (&optional arg)
   "Exit minibuffer with current candidate or input if prefix ARG is given."
