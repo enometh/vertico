@@ -415,7 +415,10 @@ The function is configured by BY, BSIZE, BINDEX, BPRED and PRED."
   (let* ((pt (max 0 (- (point) (minibuffer-prompt-end))))
          (content (minibuffer-contents-no-properties))
          (input (cons content pt)))
-    (unless (or (and interruptible (input-pending-p)) (equal vertico--input input))
+    (unless (and (if vertico-force-exhibit
+		     (setq vertico-force-exhibit nil)
+		   t)
+            (or (and interruptible (input-pending-p)) (equal vertico--input input)))
       ;; Redisplay the minibuffer such that the input becomes immediately
       ;; visible before the expensive candidate recomputation (Issue #89).
       ;; Do not redisplay during initialization, since this leads to flicker.
@@ -582,6 +585,8 @@ The function is configured by BY, BSIZE, BINDEX, BPRED and PRED."
         (put-text-property beg next 'face (remq face (if (listp val) val (list val))) obj))
       (setq beg next))))
 
+(defvar vertico-force-exhibit nil)
+
 (defun vertico--exhibit ()
   "Exhibit completion UI."
   (let ((buffer-undo-list t)) ;; Overlays affect point position and undo list!
@@ -643,6 +648,19 @@ The function is configured by BY, BSIZE, BINDEX, BPRED and PRED."
       (if (eq minibuffer--require-match 'confirm)
           (eq (ignore-errors (read-char "Confirm")) 13)
         (and (minibuffer-message "Match required") nil))))
+
+(defun vertico-kill-buffer (&optional arg)
+  (interactive "P")
+  (let (cand buf)
+    (cond ((and (eolp)
+		(setq cand (and (>= vertico--index 0) (vertico--candidate)))
+		(setq buf (get-buffer cand)))
+	   (kill-buffer buf)
+	   (setq vertico-force-exhibit t)
+	   (vertico-next))
+	  (t (kill-line arg)))))
+
+(define-key vertico-map (kbd "C-k") 'vertico-kill-buffer)
 
 (defun vertico-exit (&optional arg)
   "Exit minibuffer with current candidate or input if prefix ARG is given."
