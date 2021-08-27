@@ -632,11 +632,14 @@ The function is configured by BY, BSIZE, BINDEX, BPRED and PRED."
              ((not (and vertico--metadata (string-prefix-p "vertico-directory-" cmd)))))
     (vertico--update)))
 
+(defvar-local vertico--this-command nil)
+
 (cl-defgeneric vertico--setup ()
   "Setup completion UI."
   (when (boundp 'pixel-scroll-precision-mode)
     (setq-local pixel-scroll-precision-mode nil))
   (setq-local scroll-margin 0
+	      vertico--this-command this-command
               vertico--input t
               completion-auto-help nil
               completion-show-inline-help nil
