@@ -732,9 +732,12 @@ When the prefix argument is 0, the group order is reset."
      ((and (equal content "") (or (car-safe minibuffer-default) minibuffer-default)))
      (t content))))
 
+(defvar-local vertico--this-command nil)
+
 (defun vertico--setup ()
   "Setup completion UI."
   (setq vertico--input t
+	vertico--this-command this-command
         vertico--candidates-ov (make-overlay (point-max) (point-max) nil t t)
         vertico--count-ov (make-overlay (point-min) (point-min) nil t t))
   ;; Set priority for compatibility with `minibuffer-depth-indicate-mode'
