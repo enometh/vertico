@@ -755,9 +755,12 @@ When the prefix argument is 0, the group order is reset."
       (vertico--remove-face 0 (length content) 'vertico-current content)
       content)))
 
+(defvar-local vertico--this-command nil)
+
 (defun vertico--setup ()
   "Setup completion UI."
   (setq vertico--input t
+	vertico--this-command this-command
         vertico--candidates-ov (make-overlay (point-max) (point-max) nil t t)
         vertico--count-ov (and vertico-count-format
                                (make-overlay (point-min) (point-min) nil t t)))
