@@ -633,9 +633,12 @@ The function is configured by BY, BSIZE, BINDEX, BPRED and PRED."
   (when (and (symbolp this-command) (string-prefix-p "vertico-" (symbol-name this-command)))
     (vertico--update)))
 
+(defvar-local vertico--this-command nil)
+
 (cl-defgeneric vertico--setup ()
   "Setup completion UI."
   (setq-local scroll-margin 0
+	      vertico--this-command this-command
               vertico--input t
               completion-auto-help nil
               completion-show-inline-help nil
