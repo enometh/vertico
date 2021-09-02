@@ -710,10 +710,29 @@ The function is configured by BY, BSIZE, BINDEX, BPRED and PRED."
 
 (define-key vertico-map (kbd "C-k") 'vertico-kill-buffer)
 
+(defvar vertico-exit-specials--chars "*?"
+  "If Non-NIL a string of characters, the presence of any of which in the
+minibuffer input will cause vertico-exit to defer inserting the current
+input when completing filenames")
+
+(defvar vertico-exit-specials--cmds
+  '(dired-do-copy
+    dired-do-rename
+    dired-create-directory)
+  "If Non-NIL a list of command which cause vertico-exit to refrain fromm
+inserting the current input when completing filenames.")
+
 (defun vertico-exit (&optional arg)
   "Exit minibuffer with current candidate or input if prefix ARG is given."
   (interactive "P")
-  (when (and (not arg) (>= vertico--index 0))
+  (when (and (not arg) (>= vertico--index 0)
+	     (not
+	      (and minibuffer-completing-file-name
+		   (or (cl-some (lambda (x)
+				  (cl-find x vertico-exit-specials--chars))
+				(minibuffer-contents-no-properties))
+		       (memq vertico--this-command
+			     vertico-exit-specials--cmds)))))
     (vertico-insert))
   (when (vertico--match-p (minibuffer-contents-no-properties))
     (exit-minibuffer)))
