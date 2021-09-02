@@ -807,5 +807,26 @@ When the prefix argument is 0, the group order is reset."
   "Return non-nil if Vertico is active in BUFFER."
   (buffer-local-value 'vertico--input buffer))
 
+(defun vertico-partial ()
+  "Complete the minibuffer text as much as possible. If there is only one
+candidate, insert it."
+  (interactive)
+  (if (= (length vertico--candidates) 1)
+      (vertico-insert)
+    ;; TODO handle "^text", "text1 text2", etc.
+    (let* ((text (minibuffer-contents-no-properties))
+	   (new (if minibuffer-completing-file-name
+		    (try-completion text #'completion-file-name-table)
+		  (try-completion text vertico--candidates))))
+      (when (> (length new) (length text))
+	(delete-region (minibuffer-prompt-end) (point-max))
+	(insert new)
+	t))))
+
+;; (was 'vertico-insert)
+(define-key vertico-map (kbd "TAB") 'vertico-partial)
+;; we still want vertico-insert on a key
+(define-key vertico-map (kbd "M-TAB") 'vertico-insert)
+
 (provide 'vertico)
 ;;; vertico.el ends here
