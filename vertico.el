@@ -479,11 +479,12 @@ The function is configured by BY, BSIZE, BINDEX, BPRED and PRED."
            (title)
            (group-fun (completion-metadata-get metadata 'group-function))
            (group-format (and group-fun vertico-group-format (concat vertico-group-format "\n")))
+	   (barf (seq-subseq vertico--candidates index
+					(min
+					 (+ index vertico-count)
+					 vertico--total)))
            (candidates
-            (thread-last (seq-subseq vertico--candidates index
-                                     (min (+ index vertico-count) vertico--total))
-              (funcall vertico--highlight-function)
-              (vertico--affixate metadata))))
+            (vertico--affixate metadata barf)))
       (dolist (cand candidates)
         (let ((str (car cand)))
           (when-let (new-title (and group-format (funcall group-fun str nil)))
