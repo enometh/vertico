@@ -517,11 +517,9 @@ The function is configured by BY, BSIZE, BINDEX, BPRED and PRED."
     ;; Compute group titles
     (let* (title (index vertico--scroll)
            (group-fun (and vertico-group-format (vertico--metadata-get 'group-function)))
-           (candidates
-            (thread-last (seq-subseq vertico--candidates index
-                                     (min (+ index vertico-count) vertico--total))
-              (funcall vertico--highlight)
-              (vertico--affixate))))
+	   (barf (seq-subseq vertico--candidates index
+                                     (min (+ index vertico-count) vertico--total)))
+           (candidates (vertico--affixate (funcall vertico--highlight barf))))
       (pcase-dolist ((and cand `(,str . ,_)) candidates)
         (when-let (new-title (and group-fun (funcall group-fun str nil)))
           (unless (equal title new-title)
