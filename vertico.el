@@ -796,6 +796,8 @@ When the prefix argument is 0, the group order is reset."
 	(funcall vertico-completion-finished ret))
       ret)))
 
+;; (ad-unadvice 'vertico--advice)
+
 ;;;###autoload
 (define-minor-mode vertico-mode
   "VERTical Interactive COmpletion."
