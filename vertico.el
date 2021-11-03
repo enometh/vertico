@@ -529,7 +529,9 @@ The function is configured by BY, BSIZE, BINDEX, BPRED and PRED."
     (vertico--prompt-selection)
     (vertico--display-count)
     (vertico--display-candidates (vertico--arrange-candidates))
-    (vertico--resize)))
+    (condition-case e
+	(vertico--resize)
+      (error (message "caught3 %S" e)))))
 
 (defun vertico--goto (index)
   "Go to candidate with INDEX."
@@ -609,9 +611,14 @@ The function is configured by BY, BSIZE, BINDEX, BPRED and PRED."
 
 (cl-defgeneric vertico--display-candidates (lines)
   "Update candidates overlay `vertico--candidates-ov' with LINES."
-  (move-overlay vertico--candidates-ov (point-max) (point-max))
-  (overlay-put vertico--candidates-ov 'after-string
-               (apply #'concat #(" " 0 1 (cursor t)) (and lines "\n") lines)))
+  (condition-case e
+      (move-overlay vertico--candidates-ov (point-max) (point-max))
+    (error (message "caught1 %S" e)
+	   ))
+  (condition-case e
+      (overlay-put vertico--candidates-ov 'after-string
+               (apply #'concat #(" " 0 1 (cursor t)) (and lines "\n") lines))
+    (error (message "caught2 %S" e))))
 
 (cl-defgeneric vertico--resize ()
   "Resize active minibuffer window."
@@ -660,6 +667,8 @@ The function is configured by BY, BSIZE, BINDEX, BPRED and PRED."
       (when vertico-completion-finished
 	(funcall vertico-completion-finished ret))
       ret)))
+
+;; (ad-unadvise 'vertico--advice)
 
 (defun vertico-first ()
   "Go to first candidate, or to the prompt when the first candidate is selected."
