@@ -710,14 +710,47 @@ The function is configured by BY, BSIZE, BINDEX, BPRED and PRED."
 
 (defun vertico-kill-buffer (&optional arg)
   (interactive "P")
-  (let (cand buf)
-    (cond ((and (eolp)
-		(setq cand (and (>= vertico--index 0) (vertico--candidate)))
-		(setq buf (get-buffer cand)))
-	   (kill-buffer buf)
-	   (setq vertico-force-exhibit t)
-	   (vertico-next))
-	  (t (kill-line arg)))))
+  (cl-labels ((deletefilehist (elt hist-var &optional (depth 0))
+		(cl-check-type hist-var symbol)
+		(let ((len (and (zerop depth)
+				(length (symbol-value hist-var)))))
+		  (set hist-var (cl-delete elt (symbol-value hist-var)
+					   :test #'equal))
+		  (if (string-match "^~/" elt)
+		      (deletefilehist (expand-file-name elt) hist-var
+				      (1+ depth)))
+		  (let ((new-len (and len (length (symbol-value hist-var)))))
+		    (when new-len
+		      (message "deleted %d elements of %s" (- len new-len)
+			       hist-var)))))
+	      (redisp ()
+		(setq vertico-force-exhibit t)
+		(vertico-next)))
+    (let (cand cmd)
+      (cond ((and (eolp)
+		  (setq cand (and t ;; (>= vertico--index 0)
+				  (vertico--candidate)))
+		  (member (setq cmd vertico--this-command)
+			  '(switch-to-buffer consult-buffer)))
+	     (when-let (buf (get-buffer (if (eq cmd 'consult-buffer)
+					    (consult--tofu-get cand)
+					  cand)))
+	       (kill-buffer buf)
+	       (redisp)))
+	    ((member cmd '(find-file
+			   find-alternate-file
+			   dired
+			   find-file-or-dired
+			   find-file-or-dired-find-alternate-file
+			   find-file-or-dired-find-file
+			   find-file-or-dired-dired))
+	     (deletefilehist cand 'file-name-history)
+	     (redisp))
+	    ((member cmd '(recentf-open recent consult-recent-file))
+	     (deletefilehist cand 'recentf-list)
+	     (redisp))
+	    (t (kill-line arg))))))
+
 
 (define-key vertico-map (kbd "C-k") 'vertico-kill-buffer)
 
