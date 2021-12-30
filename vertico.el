@@ -673,6 +673,13 @@ The function is configured by BY, BSIZE, BINDEX, BPRED and PRED."
 	   (kill-buffer buf)
 	   (setq vertico-force-exhibit t)
 	   (vertico-next))
+	  ((and cand (eq vertico--this-command 'consult-recent-file))
+	   (cl-callf2 cl-delete cand recentf-list :test #'equal)
+	   (if (string-match "^~/" cand)
+	       (cl-callf2 cl-delete (expand-file-name cand)
+			  recentf-list :test #'equal))
+	   (setq vertico-force-exhibit t)
+	   (vertico-next))
 	  (t (kill-line arg)))))
 
 (define-key vertico-map (kbd "C-k") 'vertico-kill-buffer)
