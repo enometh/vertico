@@ -709,14 +709,61 @@ The function is configured by BY, BSIZE, BINDEX, BPRED and PRED."
 
 (defun vertico-kill-buffer (&optional arg)
   (interactive "P")
-  (let (cand buf)
-    (cond ((and (eolp)
-		(setq cand (and (>= vertico--index 0) (vertico--candidate)))
-		(setq buf (get-buffer cand)))
-	   (kill-buffer buf)
-	   (setq vertico-force-exhibit t)
-	   (vertico-next))
-	  (t (kill-line arg)))))
+  (cl-labels ((deletefilehist (elt hist-var &optional (depth 0))
+		(cl-check-type hist-var symbol)
+		(unless (boundp hist-var)
+		  (cl-return-from deletefilehist nil))
+		(let ((len (and (zerop depth)
+				(length (symbol-value hist-var)))))
+		  (set hist-var (cl-delete elt (symbol-value hist-var)
+					   :test #'equal))
+		  (if (string-match "^~/" elt)
+		      (deletefilehist (expand-file-name elt) hist-var
+				      (1+ depth)))
+		  (let ((new-len (and len (length (symbol-value hist-var)))))
+		    (when (and new-len (cl-plusp (- len new-len)))
+		      (message "deleted %d elements of %s" (- len new-len)
+			       hist-var)
+		      (if (= new-len len) nil t)))))
+	      (deletefilehists (elt hist-vars)
+		(let ((ret nil))
+		  (dolist (var hist-vars)
+		    (if (deletefilehist elt var) (setq ret t)))
+		  (when ret	 ;sry - no visual feedback for consult
+		    (redisp))))
+	      (redisp ()
+		(setq vertico-force-exhibit t)
+		(vertico-next)))
+    (let (cand cmd)
+      (cond ((and (eolp)
+		  (setq cand (and t ;; (>= vertico--index 0)
+				  (vertico--candidate)))
+		  (member (setq cmd vertico--this-command)
+			  '(switch-to-buffer consult-buffer)))
+	     (if (member cmd '(consult-buffer))
+		 (setq cand (substring cand 0 (1- (length cand)))))
+	     (let ((buf (get-buffer cand)))
+	       (cond (buf (kill-buffer buf) ;sry - no visual feedback with consult
+			  (redisp))
+		     ((eql cmd 'consult-buffer)
+		      (deletefilehists cand '(file-name-history recentf-list))))))
+	    ((member cmd '(find-file
+			   find-alternate-file
+			   dired
+			   find-file-or-dired
+			   find-file-or-dired-find-alternate-file
+			   find-file-or-dired-find-file
+			   find-file-or-dired-dired))
+	     (when (deletefilehist cand 'file-name-history)
+	       (redisp)))
+	    ((member cmd '(recentf-open recentf consult-recent-file dired-recent-open consult-dir))
+	     ;; ;madhu 240726 if consult-recent-file has arranged to
+	     ;; append dired-recent-directories from dired-recent to
+	     ;; the recentf-list
+	     (if (eql cmd 'consult-dir) (setq cand (substring cand 0 (1- (length cand)))))
+	     (deletefilehists cand '(recentf-list dired-recent-directories file-name-history)))
+	    (t (kill-line arg))))))
+
 
 (define-key vertico-map (kbd "C-k") 'vertico-kill-buffer)
 
