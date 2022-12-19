@@ -307,6 +307,9 @@ The function is configured by BY, BSIZE, BINDEX, BPRED and PRED."
       (vertico--metadata-get 'display-sort-function)
       vertico-sort-function))
 
+;; (setq vertico-always-preselect-first-candidate t)
+(defvar vertico-always-preselect-first-candidate nil)
+
 (defun vertico--recompute (pt content)
   "Recompute state given PT and CONTENT."
   (pcase-let* ((before (substring content 0 pt))
@@ -360,7 +363,20 @@ The function is configured by BY, BSIZE, BINDEX, BPRED and PRED."
       (vertico--all-groups . ,(or (caddr groups) vertico--all-groups))
       ;; Compute new index. Select the prompt if there are no candidates or if
       ;; the default is missing from the candidate list.
-      (vertico--index . ,(or lock (if (or def-missing (not all)) -1 0))))))
+      ;; ;madhu 221219 - undo breaking change in 565faea4b7686
+      ;;(vertico--index . ,(or lock (if (or def-missing (not all)) -1 0)))
+      (vertico--index .
+		      ,(or lock
+			   (if (or def-missing (not all)
+				   (if vertico-always-preselect-first-candidate
+				       nil
+				     (and (= (length vertico--base) (length content))
+					  (test-completion
+					   content
+					   minibuffer-completion-table
+					   minibuffer-completion-predicate))))
+			       -1 0))))))
+
 
 (defun vertico--cycle (list n)
   "Rotate LIST to position N."
