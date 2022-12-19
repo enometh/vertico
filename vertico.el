@@ -310,6 +310,9 @@ The function is configured by BY, BSIZE, BINDEX, BPRED and PRED."
       (vertico--metadata-get 'display-sort-function)
       vertico-sort-function))
 
+;; (setq vertico-always-preselect-first-candidate nil)
+(defvar vertico-always-preselect-first-candidate t)
+
 (defun vertico--recompute (pt content)
   "Recompute state given PT and CONTENT."
   (pcase-let* ((table minibuffer-completion-table)
@@ -354,18 +357,26 @@ The function is configured by BY, BSIZE, BINDEX, BPRED and PRED."
       (vertico--total . ,(length all))
       (vertico--hilit . ,(or hl #'identity))
       (vertico--allow-prompt . ,(and (not (eq vertico-preselect 'no-prompt))
-                                     (or def-missing (eq vertico-preselect 'prompt)
+                                     (or def-missing
+					 (if vertico-always-preselect-first-candidate
+					     nil
+					   (eq vertico-preselect 'prompt))
                                          (memq minibuffer--require-match
                                                '(nil confirm confirm-after-completion)))))
       (vertico--lock-candidate . ,lock)
       (vertico--groups . ,(cadr groups))
       (vertico--all-groups . ,(or (caddr groups) vertico--all-groups))
       (vertico--index . ,(or lock
+			     (if vertico-always-preselect-first-candidate
+				 (if (or def-missing (not all)
+                                     (and (= (length vertico--base) (length content))
+					  (test-completion content table pred)))
+                                 -1 0)
                              (if (or def-missing (eq vertico-preselect 'prompt) (not all)
                                      (and completing-file (eq vertico-preselect 'directory)
                                           (= (length vertico--base) (length content))
                                           (test-completion content table pred)))
-                                 -1 0))))))
+                                 -1 0)))))))
 
 (defun vertico--cycle (list n)
   "Rotate LIST to position N."
