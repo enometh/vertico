@@ -426,6 +426,8 @@ The function is configured by BY, BSIZE, BINDEX, BPRED and PRED."
   (when (and (symbolp this-command) (string-prefix-p "vertico-" (symbol-name this-command)))
     (vertico--update)))
 
+(defvar vertico-force-exhibit nil)
+
 (defun vertico--update (&optional interruptible)
   "Update state, optionally INTERRUPTIBLE."
   (let* ((pt (max 0 (- (point) (minibuffer-prompt-end))))
@@ -608,8 +610,6 @@ The function is configured by BY, BSIZE, BINDEX, BPRED and PRED."
       (when-let (val (get-text-property beg 'face obj))
         (put-text-property beg next 'face (remq face (if (listp val) val (list val))) obj))
       (setq beg next))))
-
-(defvar vertico-force-exhibit nil)
 
 (defun vertico--exhibit ()
   "Exhibit completion UI."
