@@ -292,7 +292,12 @@ The function is configured by BY, BSIZE, BINDEX, BPRED and PRED."
         (cl-letf (((symbol-function 'orderless-highlight-matches)
                    (lambda (pattern cands)
                      (let ((regexps (orderless-pattern-compiler pattern)))
-                       (setq hl (lambda (x) (orderless-highlight-matches regexps x))))
+                       (setq hl (lambda (x)
+	  (condition-case e
+		  (orderless-highlight-matches regexps x)
+    (error (message "orderless-highlighter caught1 %S" e)
+	   ))
+				  )))
                      cands)))
           (cons (apply #'completion-all-completions args) hl))
       (cons (apply #'completion-all-completions args) hl))))
