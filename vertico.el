@@ -665,7 +665,7 @@ The function is configured by BY, BSIZE, BINDEX, BPRED and PRED."
               vertico--candidates-ov (make-overlay (point-max) (point-max) nil t t)
               vertico--count-ov (make-overlay (point-min) (point-min) nil t t))
   (overlay-put vertico--count-ov 'priority 1) ;; For `minibuffer-depth-indicate-mode'
-  (use-local-map vertico-map)
+  (use-local-map (make-composed-keymap vertico-map (current-local-map)))
   (add-hook 'pre-command-hook #'vertico--prepare nil 'local)
   (add-hook 'post-command-hook #'vertico--exhibit nil 'local))
 
