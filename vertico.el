@@ -533,13 +533,40 @@ The function is configured by BY, BSIZE, BINDEX, BPRED and PRED."
         (put-text-property beg next 'face (remq face (ensure-list val)) obj))
       (setq beg next))))
 
+(defvar vertico-aggressive-completions nil
+  "Internal.")
+
+(defcustom vertico-aggressive-completions-strategy 'reset
+  "When set to ALWAYS conform to the standard aggressive vertico behaviour.
+
+When set to DONT-RESET or RESET, minibuffer file name completions will require
+a gesture to complete, so any filesystem activity is delayed until the gesture
+is invoked. If set to DONT-RESET, aggressive behaviour is turned on until
+vertico exits.  If set to RESET, futher completions will require a further
+gesture."
+  :group 'vertico
+  :type '(choice (const always) (const reset) (const dont-reset)))
+
+(cl-defmacro vertico-aggresive-delayed (&body body)
+  `(cond ((not vertico-aggressive-completions)
+	  (setq vertico-aggressive-completions t)
+	  (vertico--exhibit)
+	  ,@body)
+	 (t (prog1 (progn ,@body)
+	      (cl-ecase vertico-aggressive-completions-strategy
+		(reset
+		 (when minibuffer-completing-file-name
+		   (setq vertico-aggressive-completions nil)))
+		((always dont-reset) t))))))
+
 (defun vertico--exhibit ()
   "Exhibit completion UI."
+ (when vertico-aggressive-completions
   (let ((buffer-undo-list t)) ;; Overlays affect point position and undo list!
     (vertico--update 'interruptible)
     (vertico--prompt-selection)
     (vertico--display-count)
-    (vertico--display-candidates (vertico--arrange-candidates))))
+    (vertico--display-candidates (vertico--arrange-candidates)))))
 
 (defun vertico--goto (index)
   "Go to candidate with INDEX."
@@ -659,6 +686,11 @@ The function is configured by BY, BSIZE, BINDEX, BPRED and PRED."
   "Setup completion UI."
   (setq-local scroll-margin 0
 	      vertico--this-command this-command
+	      vertico-aggressive-completions
+	      (cl-ecase vertico-aggressive-completions-strategy
+		((reset dont-reset)
+		 (not minibuffer-completing-file-name))
+		((always) t))
               vertico--input t
               completion-auto-help nil
               completion-show-inline-help nil
@@ -843,6 +875,7 @@ When the prefix argument is 0, the group order is reset."
 (defun vertico-insert ()
   "Insert current candidate in minibuffer."
   (interactive)
+ (vertico-aggresive-delayed
   ;; XXX There is a small bug here, depending on interpretation. When completing
   ;; "~/emacs/master/li|/calc" where "|" is the cursor, then the returned
   ;; candidate only includes the prefix "~/emacs/master/lisp/", but not the
@@ -850,7 +883,7 @@ When the prefix argument is 0, the group order is reset."
   ;; the *Completions* buffer. See bug#48356.
   (when (> vertico--total 0)
     (let ((vertico--index (max 0 vertico--index)))
-      (insert (prog1 (vertico--candidate) (delete-minibuffer-contents))))))
+      (insert (prog1 (vertico--candidate) (delete-minibuffer-contents)))))))
 
 ;;;###autoload
 (define-minor-mode vertico-mode
@@ -879,6 +912,7 @@ When the prefix argument is 0, the group order is reset."
   "Complete the minibuffer text as much as possible. If there is only one
 candidate, insert it."
   (interactive)
+ (vertico-aggresive-delayed
   (if (= (length vertico--candidates) 1)
       (vertico-insert)
     ;; TODO handle "^text", "text1 text2", etc.
@@ -889,7 +923,7 @@ candidate, insert it."
       (when (> (length new) (length text))
 	(delete-region (minibuffer-prompt-end) (point-max))
 	(insert new)
-	t))))
+	t)))))
 
 ;; (was 'vertico-insert)
 (define-key vertico-map (kbd "TAB") 'vertico-partial)
