@@ -766,8 +766,8 @@ gesture."
 		  (let ((new-len (and len (length (symbol-value hist-var)))))
 		    (when (and new-len (cl-plusp (- len new-len)))
 		      (message "deleted %d elements of %s" (- len new-len)
-			       hist-var))
-		    (if (= new-len len) nil t))))
+			       hist-var)
+		      (if (= new-len len) nil t)))))
 	      (deletefilehists (elt hist-vars)
 		(let ((ret nil))
 		  (dolist (var hist-vars)
@@ -804,7 +804,7 @@ gesture."
 	     ;; append dired-recent-directories from dired-recent to
 	     ;; the recentf-list
 	     (if (eql cmd 'consult-dir) (setq cand (substring cand 0 (1- (length cand)))))
-	     (deletfilehists cand '(recentf-list dired-recent-directories file-name-history)))
+	     (deletefilehists cand '(recentf-list dired-recent-directories file-name-history)))
 	    (t (kill-line arg))))))
 
 
